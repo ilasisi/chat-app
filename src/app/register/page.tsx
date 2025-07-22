@@ -6,49 +6,52 @@ import { Button } from '@/components/ui/button';
 import api from '@/lib/axios';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
-type AxiosErrorWithMessage = {
-  response?: {
-    data?: {
-      message?: string;
-    };
-  };
-  message?: string;
-};
-
-export default function LoginPage() {
+export default function RegisterPage() {
+  const [username, setUsername] = useState('');
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const router = useRouter();
 
   const mutation = useMutation({
-    mutationFn: async (payload: { email: string; password: string }) => {
-      const { data } = await api.post('/auth/login', payload);
-      // Save access_token to localStorage if present
-      if (data.access_token) {
-        localStorage.setItem('access_token', data.access_token);
-      }
+    mutationFn: async (payload: {
+      username: string;
+      full_name: string;
+      email: string;
+      password: string;
+    }) => {
+      const { data } = await api.post('/auth/register', payload);
       return data;
-    },
-    onSuccess: () => {
-      router.push('/conversations');
     },
   });
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    mutation.mutate({ email, password });
+    mutation.mutate({ username, full_name: fullName, email, password });
   }
 
   return (
     <div className='flex justify-center items-center min-h-screen bg-gray-50'>
       <Card className='w-full max-w-md'>
         <CardHeader>
-          <CardTitle>Login</CardTitle>
+          <CardTitle>Register</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className='space-y-4'>
+            <Input
+              type='text'
+              placeholder='Username'
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+            <Input
+              type='text'
+              placeholder='Full Name'
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+            />
             <Input
               type='email'
               placeholder='Email'
@@ -68,18 +71,14 @@ export default function LoginPage() {
               disabled={mutation.isPending}
               className='w-full'
             >
-              {mutation.isPending ? 'Logging in...' : 'Login'}
+              {mutation.isPending ? 'Registering...' : 'Register'}
             </Button>
           </form>
           {mutation.isError && (
             <div className='text-red-500 mt-2'>
-              {(() => {
-                const err = mutation.error as AxiosErrorWithMessage;
-                if (err?.response?.data?.message) {
-                  return err.response.data.message;
-                }
-                return err?.message || 'Login failed';
-              })()}
+              {mutation.error instanceof Error
+                ? mutation.error.message
+                : 'Registration failed'}
             </div>
           )}
           {mutation.isSuccess && (
@@ -88,12 +87,9 @@ export default function LoginPage() {
             </pre>
           )}
           <div className='mt-6 text-center text-sm'>
-            Don&apos;t have an account?{' '}
-            <Link
-              href='/register'
-              className='text-primary underline hover:opacity-80'
-            >
-              Register
+            Already have an account?{' '}
+            <Link href='/' className='text-primary underline hover:opacity-80'>
+              Login
             </Link>
           </div>
         </CardContent>
