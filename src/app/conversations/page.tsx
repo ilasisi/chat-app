@@ -4,9 +4,10 @@ import { DashLayout } from '@/components/ui/layouts/dash-layout';
 import { User } from '@/types/auth';
 
 export default function ConversationsPage() {
-  const loggedUser: User = JSON.parse(
-    localStorage.getItem('logged_user') || '{}'
-  );
+  const loggedUser: User =
+    typeof window !== 'undefined'
+      ? JSON.parse(localStorage.getItem('logged_user') || '{}')
+      : {};
 
   return (
     <DashLayout>

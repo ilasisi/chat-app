@@ -22,9 +22,10 @@ import { getInitials } from '@/lib/utils';
 
 export function NavUser() {
   const { isMobile } = useSidebar();
-  const loggedUser: User = JSON.parse(
-    localStorage.getItem('logged_user') || '{}'
-  );
+  const loggedUser: User =
+    typeof window !== 'undefined'
+      ? JSON.parse(localStorage.getItem('logged_user') || '{}')
+      : {};
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');
