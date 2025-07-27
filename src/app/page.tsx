@@ -1,103 +1,11 @@
-'use client';
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import api from '@/lib/axios';
-import { useMutation } from '@tanstack/react-query';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-
-type AxiosErrorWithMessage = {
-  response?: {
-    data?: {
-      message?: string;
-    };
-  };
-  message?: string;
-};
+import { LoginForm } from '@/components/forms/login-form';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const router = useRouter();
-
-  const mutation = useMutation({
-    mutationFn: async (payload: { email: string; password: string }) => {
-      const { data } = await api.post('/auth/login', payload);
-      // Save access_token to localStorage if present
-      if (data.access_token) {
-        localStorage.setItem('access_token', data.access_token);
-      }
-      return data;
-    },
-    onSuccess: () => {
-      router.push('/conversations');
-    },
-  });
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    mutation.mutate({ email, password });
-  }
-
   return (
-    <div className='flex justify-center items-center min-h-screen bg-gray-50'>
-      <Card className='w-full max-w-md'>
-        <CardHeader>
-          <CardTitle>Login</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className='space-y-4'>
-            <Input
-              type='email'
-              placeholder='Email'
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <Input
-              type='password'
-              placeholder='Password'
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <Button
-              type='submit'
-              disabled={mutation.isPending}
-              className='w-full'
-            >
-              {mutation.isPending ? 'Logging in...' : 'Login'}
-            </Button>
-          </form>
-          {mutation.isError && (
-            <div className='text-red-500 mt-2'>
-              {(() => {
-                const err = mutation.error as AxiosErrorWithMessage;
-                if (err?.response?.data?.message) {
-                  return err.response.data.message;
-                }
-                return err?.message || 'Login failed';
-              })()}
-            </div>
-          )}
-          {mutation.isSuccess && (
-            <pre className='mt-4 p-2 bg-gray-100 rounded text-xs overflow-x-auto'>
-              {JSON.stringify(mutation.data, null, 2)}
-            </pre>
-          )}
-          <div className='mt-6 text-center text-sm'>
-            Don&apos;t have an account?{' '}
-            <Link
-              href='/register'
-              className='text-primary underline hover:opacity-80'
-            >
-              Register
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+    <div className='flex min-h-svh w-full items-center justify-center p-6 md:p-10'>
+      <div className='w-full max-w-sm'>
+        <LoginForm />
+      </div>
     </div>
   );
 }

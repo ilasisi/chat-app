@@ -4,14 +4,27 @@ const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
 });
 
-// Add a request interceptor to include Authorization header if token exists
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('access_token');
-      if (token) {
-        config.headers = config.headers || {};
-        config.headers['Authorization'] = `Bearer ${token}`;
+      const authEndpoints = ['/auth/login', '/auth/register'];
+
+      const isAuthEndpoint = authEndpoints.some((endpoint) =>
+        config.url?.includes(endpoint)
+      );
+
+      if (!isAuthEndpoint) {
+        const token = localStorage.getItem('access_token');
+
+        if (!token) {
+          window.location.href = '/';
+          return Promise.reject(new Error('No access token found'));
+        }
+
+        if (token) {
+          config.headers = config.headers || {};
+          config.headers['Authorization'] = `Bearer ${token}`;
+        }
       }
     }
     return config;
