@@ -1,5 +1,3 @@
-import * as React from 'react';
-
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +21,7 @@ import { cn, getInitials } from '@/lib/utils';
 import { Conversation } from '@/types/conversation';
 import { NavUser } from './nav-user';
 import { useParams } from 'next/navigation';
+import { Fragment } from 'react';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { userId } = useParams<{ userId: string }>();
@@ -32,7 +31,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       const { data } = await api.get('/chat/conversations');
       return data as Conversation[];
     },
-    refetchInterval: 3000,
   });
 
   const { data: users, isLoading: usersLoading } = useQuery({
@@ -41,7 +39,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       const { data } = await api.get('/users');
       return data as User[];
     },
-    refetchInterval: 3000,
   });
 
   return (
@@ -68,13 +65,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               {isLoading ? (
                 <SidebarMenuItem>Loading...</SidebarMenuItem>
               ) : (
-                <React.Fragment>
+                <Fragment>
                   {conversations?.map((conversation) => (
                     <SidebarMenuItem
                       key={conversation.id}
                       className={cn(
                         'bg-neutral-100 rounded-lg',
-                        userId === conversation.other_participant.id &&
+                        userId === conversation?.other_participant?.id &&
                           'bg-primary'
                       )}
                     >
@@ -83,24 +80,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         asChild
                       >
                         <Link
-                          href={`/conversations/${conversation.other_participant.id}`}
+                          href={`/conversations/${conversation?.other_participant?.id}`}
                         >
                           <Avatar>
                             <AvatarImage
                               src={
-                                conversation.other_participant.avatar_url ?? ''
+                                conversation.other_participant?.avatar_url ?? ''
                               }
                               alt='user avatar'
                             />
                             <AvatarFallback
                               className={cn(
                                 'bg-primary text-white',
-                                userId === conversation.other_participant.id &&
+                                userId ===
+                                  conversation?.other_participant?.id &&
                                   'bg-white text-primary'
                               )}
                             >
                               {getInitials(
-                                conversation.other_participant.full_name
+                                conversation?.other_participant?.full_name
                               )}
                             </AvatarFallback>
                           </Avatar>
@@ -110,17 +108,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                 className={cn(
                                   'font-medium line-clamp-1',
                                   userId ===
-                                    conversation.other_participant.id &&
+                                    conversation?.other_participant?.id &&
                                     'text-white font-bold'
                                 )}
                               >
-                                {conversation.other_participant.full_name}
+                                {conversation?.other_participant?.full_name}
                               </p>
                               <p
                                 className={cn(
                                   'text-xs text-neutral-500 whitespace-nowrap',
                                   userId ===
-                                    conversation.other_participant.id &&
+                                    conversation.other_participant?.id &&
                                     'text-neutral-100'
                                 )}
                               >
@@ -136,7 +134,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             <p
                               className={cn(
                                 'text-xs line-clamp-1 text-neutral-600',
-                                userId === conversation.other_participant.id &&
+                                userId ===
+                                  conversation?.other_participant?.id &&
                                   'text-neutral-100'
                               )}
                             >
@@ -147,7 +146,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
-                </React.Fragment>
+                </Fragment>
               )}
             </SidebarMenu>
           </SidebarGroupContent>

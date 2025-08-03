@@ -7,12 +7,19 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { DashLayout } from '@/components/ui/layouts/dash-layout';
 import { Message } from '@/types/conversation';
+import { usePusher } from '@/hooks/use-pusher';
+import { User } from '@/types/auth';
 
 export default function ChatMessagesPage() {
+  const { pusher, isConnected } = usePusher();
   const { userId } = useParams<{ userId: string }>();
   const [message, setMessage] = useState('');
   const queryClient = useQueryClient();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const loggedUser: User =
+    typeof window !== 'undefined'
+      ? JSON.parse(localStorage.getItem('logged_user') || '{}')
+      : {};
 
   const { data: messages, isLoading } = useQuery({
     queryKey: ['messages', userId],
@@ -20,22 +27,70 @@ export default function ChatMessagesPage() {
       const { data } = await api.get(`/chat/messages/${userId}`);
       return data as Message[];
     },
-    refetchInterval: 3000,
   });
 
   const sendMessage = useMutation({
     mutationFn: async (content: string) => {
       await api.post('/chat/send', { recipientId: userId, content });
     },
-    onSuccess: () => {
-      setMessage('');
-      queryClient.invalidateQueries({ queryKey: ['messages', userId] });
-    },
   });
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    if (!pusher || !isConnected || !userId || !messages?.length) return;
+
+    const channel = pusher.subscribe(`user-${messages[0].conversation_id}`);
+
+    channel.bind('new-message', (data: { message: Message }) => {
+      if (data.message.sender_id !== loggedUser.id) {
+        handleNewMessage(data.message);
+      }
+    });
+
+    return () => {
+      channel.unbind_all();
+      pusher.unsubscribe(`user-${messages[0].conversation_id}`);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pusher, isConnected, userId, messages]);
+
+  const handleNewMessage = (data: Message) => {
+    queryClient.setQueryData(
+      ['messages', userId],
+      (old: Message[] | undefined) => {
+        if (!old) return [];
+        return [...old, data];
+      }
+    );
+  };
+
+  const handleSendMessage = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (message.trim()) {
+      handleNewMessage({
+        id: `temp-${Date.now()}`,
+        conversation_id: messages?.[0]?.conversation_id || '',
+        sender_id: loggedUser.id,
+        content: message.trim(),
+        message_type: 'text',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        sender: {
+          id: loggedUser.id,
+          username: loggedUser.username,
+          full_name: loggedUser.full_name,
+          avatar_url: loggedUser.avatar_url,
+        },
+      });
+
+      sendMessage.mutate(message.trim());
+
+      setMessage('');
+    }
+  };
 
   return (
     <DashLayout>
@@ -79,12 +134,7 @@ export default function ChatMessagesPage() {
           <div ref={messagesEndRef} />
         </div>
         <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (message.trim()) {
-              sendMessage.mutate(message);
-            }
-          }}
+          onSubmit={handleSendMessage}
           className='flex items-center gap-2 py-4'
         >
           <Input
